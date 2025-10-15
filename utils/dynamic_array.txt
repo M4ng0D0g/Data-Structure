@@ -1,0 +1,148 @@
+#pragma once
+#include <cstddef>
+#include <stdexcept>
+#include <type_traits>
+
+namespace my_cont {
+
+	template <typename T, size_t reallocF = 10ul>
+	class DynamicArray {
+	protected:
+		T* data_;
+		size_t size_ = 0;
+		size_t capacity_;
+		size_t reallocF_ = reallocF;
+		// using iterator = T*;
+
+	public:
+		DynamicArray(unsigned int capacity = 1) : capacity_(capacity) {
+			data_ = new T[capacity_];
+		}
+		DynamicArray(const DynamicArray& other) : capacity_(other.capacity_), size_(other.size_) {
+			data_ = new T[capacity_];
+			for (size_t i = 0; i < other.size_; ++i) {
+				data_[i] = other.data_[i];
+			}
+		}
+		~DynamicArray() {
+			if constexpr (std::is_pointer<T>::value) {
+				for (size_t i = 0; i < size_; ++i) delete data_[i];
+			}
+			delete[] data_;
+		}
+		DynamicArray& operator=(const DynamicArray& other) {
+			if (this == &other) return *this;
+			delete[] data_;
+
+			capacity_ = other.capacity_;
+			size_ = other.size_;
+
+			data_ = new T[capacity_];
+			for (size_t i = 0; i < other.size_; ++i) {
+				if constexpr (std::is_pointer<T>::value) {
+					data_[i] = new std::remove_pointer_t<T>(*(other.data_[i]));
+				}
+				else {
+					data_[i] = other.data_[i];
+				}
+			}
+			
+			return *this;
+		}
+		DynamicArray& operator=(DynamicArray&& other) {
+			if (this == &other) return *this;
+
+			data_ = other.data_;
+			capacity_ = other.capacity_;
+			size_ = other.size_;
+
+			other.data_ = nullptr;
+			other.capacity_ = 0;
+			other.size_ = 0;
+
+			return *this;
+		}
+		T& operator[](size_t idx) {
+			if (idx >= size_) {
+				throw std::out_of_range("DynamicArray::at: index out of range");
+			}
+			return data_[idx];
+		}
+		const T& operator[](size_t idx) const {
+			if (idx >= capacity_) {
+				throw std::out_of_range("Index out of range in const operator[]");
+			}
+			return data_[idx];
+		}
+
+		void reserve(size_t capacity) {
+			if (capacity_ <= capacity) return;
+
+			T* newData = new T[capacity];
+			for (size_t i = 0; i < size_; ++i) {
+				newData[i] = data_[i];
+			}
+			delete[] data_;
+			data_ = newData;
+			capacity_ = capacity;
+		}
+		void resize(size_t size) {
+			if (size == size_) return;
+			if (size < size_) {
+				for(size_t i = size; i < size_; ++i) {
+					delete data_[i];
+				}
+			}
+			else if (size > size_ && size > capacity_) {
+				size_t newCapacity = capacity_;
+				while (size >= newCapacity) {
+					newCapacity *= reallocF_;
+				}
+
+				T* newData = new T[newCapacity];
+				for (size_t i = 0; i < size_; ++i) {
+					newData[i] = data_[i];
+				}
+				delete[] data_;
+				data_ = newData;
+				capacity_ = newCapacity;
+			}
+			size_ = size;
+		}
+		void push_back(T v) {
+			while (size_ >= newCapacity) {
+				newCapacity *= reallocF_;
+			}
+
+			T* newData = new T[newCapacity];
+			for (size_t i = 0; i < size_; ++i) {
+				newData[i] = data_[i];
+			}
+			delete[] data_;
+			data_ = newData;
+			capacity_ = newCapacity;
+
+			data_[size_] = v;
+			++size_;
+		}
+		const size_t size() const {
+			return size_;
+		}
+		const size_t capacity() const {
+			return capacity_;
+		}
+	};
+
+}
+
+/*
+int bs_lb (const DynamicArray<Data*>& data, int target) {
+		int l = 0, r = data.size();
+		while (l < r) {
+			int m = l + (r - l) / 2;
+			if(data[m]->score < target) l = m + 1;
+			else r = m;
+		}
+		return r;
+	};
+	*/
