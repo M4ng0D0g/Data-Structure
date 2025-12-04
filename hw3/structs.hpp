@@ -18,13 +18,15 @@ public:
 		data_[id].push_back(score);
 	}
 	double SearchAVG(int id) override {
+		double result = 0;
+		int cnt = 0;
 		if (!data_[id].size()) return -1;
 
-		double result = 0;
 		for (const auto& s : data_[id]) {
 			result += s;
+			++cnt;
 		}
-		return result / 10;
+		return result / cnt;
 	}
 };
 
@@ -37,12 +39,14 @@ public:
 		data_[id].push_back(score);
 	}
 	double SearchAVG(int id) override {
+		double result = 0;
+		int cnt = 0;
 		if (!data_[id].size()) return -1;
 
-		double result = 0;
 		for (const auto& s : data_[id]) {
 			result += s;
+			++cnt;
 		}
-		return result / 10;
+		return result / cnt;
 	}
 };
